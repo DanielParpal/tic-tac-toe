@@ -8,7 +8,7 @@ const Game: React.FC = () => {
     o: 'o'
   };
 
-  const [tiles, setGrid] = useState(new Array(9).fill(''));
+  const [frames, setFrames] = useState([new Array(9).fill('')]);
   const [turn, setTurn] = useState(TurnsEnum.x);
   const [winner, setWinner] = useState('');
 
@@ -18,12 +18,11 @@ const Game: React.FC = () => {
   const toggleTile = (index: number, _e: React.SyntheticEvent) => {
     if (isAlreadyOccupiedAtIndex(index)) return;
     
-    // Let's explore array destructuring later
-    const tempTiles = tiles;
-    tempTiles[index] = turn;
-    setGrid(tempTiles);
+    const newFrame = lastFrame();
+    newFrame[index] = turn;
+    setFrames(frames.concat([newFrame]));
 
-    const gameWon = checkForWin(tiles, turn);
+    const gameWon = checkForWin(newFrame, turn);
 
     if (gameWon) {
       setWinner(turn)
@@ -34,18 +33,25 @@ const Game: React.FC = () => {
   }
 
   const isAlreadyOccupiedAtIndex = (index: number): boolean => {
-    return tiles[index] !== '';
+    return lastFrame()[index] !== '';
   }
 
+  const lastFrame = (): string[] => {
+    return frames[frames.length-1];
+  };
+
   return (
-    <div className="Grid">
-      {tiles.map((tile, index) => {
-        return (
-          <div key={index} onClick={(e) => toggleTile(index, e)} className="Tile">
-            {tile}
-          </div>
-        );
-      })}
+    <div>
+      <p>Player turn: {turn}</p>
+      <div className="Grid">
+        {lastFrame().map((tile, index) => {
+          return (
+            <div key={index} onClick={(e) => toggleTile(index, e)} className="Tile">
+              {tile}
+            </div>
+          );
+        })}
+      </div>
       <p>{winner !== '' ? "winner is: " + winner : ''}</p>
     </div>
   )
