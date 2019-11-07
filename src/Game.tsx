@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import './Game.css';
+import {checkForWin} from './modules/engine';
 
 const Game: React.FC = () => {
   const TurnsEnum = {
