@@ -1,4 +1,22 @@
+.Grid {
+  display: grid;
+  grid-template-columns: repeat(3, 100px);
+  grid-template-rows: repeat(3, 100px);
+  justify-content: center;
+}
+
 .Tile {
+  border: 1px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.Tile > img {
+  width: 100px;
+}
+
+/* .Tile {
   width: 40px;
   height: 40px;
   border: 1px solid black;
@@ -9,4 +27,4 @@
 
 .Tile:nth-child(3n+1) {
   clear: left;
-}
+} */

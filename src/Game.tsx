@@ -4,52 +4,49 @@ import {checkForWin} from './modules/engine';
 
 const Game: React.FC = () => {
   const TurnsEnum = {
-    X: 'x',
-    O: 'o'
+    x: 'x',
+    o: 'o'
   };
 
-  const [grid, setGrid] = useState([['', '', ''], ['', '', ''], ['', '', '']]);
-  const [turn, setTurn] = useState(TurnsEnum.X);
+  const [tiles, setGrid] = useState(new Array(9).fill(''));
+  const [turn, setTurn] = useState(TurnsEnum.x);
   const [winner, setWinner] = useState('');
 
-  const toggleTile = (row: number, col: number, e: React.SyntheticEvent) => {
-    const currentState = grid[row][col];
-    if (currentState !== '') return;
-    
-    const newGrid = grid;
-    newGrid[row][col] = turn;
-    setGrid([...grid]);
+  // TO-DO: Add a time travel option
+  // TO-DO: We'll add a restart button
 
-    const gameWon = checkForWin(grid.flat(), turn);
+  const toggleTile = (index: number, _e: React.SyntheticEvent) => {
+    if (isAlreadyOccupiedAtIndex(index)) return;
+    
+    // Let's explore array destructuring later
+    const tempTiles = tiles;
+    tempTiles[index] = turn;
+    setGrid(tempTiles);
+
+    const gameWon = checkForWin(tiles, turn);
 
     if (gameWon) {
-      setWinner('x')
+      setWinner(turn)
     } else {
-      const newTurn = turn === TurnsEnum.X ? TurnsEnum.O : TurnsEnum.X;
+      const newTurn = turn === TurnsEnum.x ? TurnsEnum.o : TurnsEnum.x;
       setTurn(newTurn);
     }
   }
 
-  const tiles = grid.map((row, rowIndex) => {
-    return (
-      <div key={'row-' + rowIndex}>
-        {row.map((tile, colIndex) => {
-          return (
-            <div onClick={(e) => toggleTile(rowIndex, colIndex, e)} className='Tile' key={'col-' + rowIndex + '-' + colIndex}>
-              {tile}
-            </div>
-          );
-        })}
-      </div>
-    );
-  });
+  const isAlreadyOccupiedAtIndex = (index: number): boolean => {
+    return tiles[index] !== '';
+  }
 
   return (
-    <div>
-      {tiles}
-      <div>
-        <p>{winner !== '' ? "winner is: " + winner : ''}</p>
-      </div>
+    <div className="Grid">
+      {tiles.map((tile, index) => {
+        return (
+          <div key={index} onClick={(e) => toggleTile(index, e)} className="Tile">
+            {tile}
+          </div>
+        );
+      })}
+      <p>{winner !== '' ? "winner is: " + winner : ''}</p>
     </div>
   )
 }
