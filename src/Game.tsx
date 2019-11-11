@@ -16,13 +16,11 @@ const Game: React.FC = () => {
   const [turn, setTurn] = useState(TurnsEnum.x);
   const [winner, setWinner] = useState('');
 
-  // TO-DO: Add a time travel option
-  // TO-DO: We'll add a restart button
 
   const toggleTile = (index: number, _e: React.SyntheticEvent) => {
     if (isAlreadyOccupiedAtIndex(index)) return;
     
-    const newFrame = lastFrame();
+    const newFrame = [...lastFrame()];
     newFrame[index] = turn;
     setFrames(frames.concat([newFrame]));
 
@@ -36,9 +34,23 @@ const Game: React.FC = () => {
     }
   }
 
+  const travelTo = (index: number, _e: React.SyntheticEvent) => {
+    const newFrames = frames.slice(0, index + 1);
+    console.log(newFrames);
+    setFrames(newFrames);
+    setTurn(getCurrentTurn());
+  }
+
+  // TO-DO: useEffect to set turn?
+  // Winner should clear if it is not the case anymore
+
   const restartGame = () => {
     setFrames(emptyFrames());
-    setTurn(TurnsEnum.x);
+    setTurn(getCurrentTurn());
+  }
+
+  const getCurrentTurn = () => {
+    return frames.length % 2 === 1 ? TurnsEnum.x : TurnsEnum.o;
   }
 
   const isAlreadyOccupiedAtIndex = (index: number): boolean => {
@@ -50,19 +62,30 @@ const Game: React.FC = () => {
   };
 
   return (
-    <div>
-      <p>Player turn: {turn}</p>
-      <div className="Grid">
-        {lastFrame().map((tile, index) => {
-          return (
-            <div key={index} onClick={(e) => toggleTile(index, e)} className="Tile">
-              {tile}
-            </div>
-          );
-        })}
+    <div className="Grid">
+      <div>
+        <p>Player turn: {turn}</p>
+        <div className="Board">
+          {lastFrame().map((tile, index) => {
+            return (
+              <div key={index} onClick={(e) => toggleTile(index, e)} className="Tile">
+                {tile}
+              </div>
+            );
+          })}
+        </div>
+        <p>{winner !== '' ? "winner is: " + winner : ''}</p>
+        <button onClick={restartGame}>Restart game</button>
       </div>
-      <p>{winner !== '' ? "winner is: " + winner : ''}</p>
-      <button onClick={restartGame}>Restart game</button>
+      <div>
+        <h3>Time travel</h3>
+        {
+          frames.map((_, index) => {
+            const text = index > 0 ? `move ${index}` : "start";
+            return <button onClick={(e) => travelTo(index, e)} key={index}>Go to {text}</button>
+          })
+        }
+      </div>
     </div>
   )
 }
