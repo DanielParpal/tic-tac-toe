@@ -1,8 +1,9 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import './Game.css';
 import {checkForWin} from './modules/engine';
 
 const Game: React.FC = () => {
+
   const TurnsEnum = {
     x: 'x',
     o: 'o'
@@ -16,50 +17,57 @@ const Game: React.FC = () => {
   const [turn, setTurn] = useState(TurnsEnum.x);
   const [winner, setWinner] = useState('');
 
+  const getCurrentTurn = useCallback(() => {
+    return frames.length % 2 === 1 ? TurnsEnum.x : TurnsEnum.o;
+  }, [frames, TurnsEnum]);
+
+  const lastFrame = useCallback((): string[] => {
+    return frames[frames.length-1];
+  }, [frames]);
+
+  useEffect(() => {
+    const hasWinningPattern = checkForWin(lastFrame(), turn);
+
+    if (hasWinningPattern) {
+      setWinner(turn);
+    } else {
+      setWinner('');
+      setTurn(getCurrentTurn());
+    }
+  }, [frames, lastFrame, turn, getCurrentTurn]);
 
   const toggleTile = (index: number, _e: React.SyntheticEvent) => {
-    if (isAlreadyOccupiedAtIndex(index)) return;
-    
+    if (moveIsNotLegalAt(index)) return;
+
+    markTileToCurrentPlayer(index);
+  }
+
+  const moveIsNotLegalAt = (index: number) => {
+    return gameIsOver() || tileIsOccupiedAtIndex(index);
+  }
+
+  const tileIsOccupiedAtIndex = (index: number): boolean => {
+    return lastFrame()[index] !== '';
+  }
+
+  const markTileToCurrentPlayer = (index: number) => {
     const newFrame = [...lastFrame()];
     newFrame[index] = turn;
     setFrames(frames.concat([newFrame]));
-
-    const gameWon = checkForWin(newFrame, turn);
-
-    if (gameWon) {
-      setWinner(turn)
-    } else {
-      const newTurn = turn === TurnsEnum.x ? TurnsEnum.o : TurnsEnum.x;
-      setTurn(newTurn);
-    }
   }
 
   const travelTo = (index: number, _e: React.SyntheticEvent) => {
     const newFrames = frames.slice(0, index + 1);
-    console.log(newFrames);
     setFrames(newFrames);
-    setTurn(getCurrentTurn());
   }
-
-  // TO-DO: useEffect to set turn?
-  // Winner should clear if it is not the case anymore
-
+  
   const restartGame = () => {
     setFrames(emptyFrames());
-    setTurn(getCurrentTurn());
   }
 
-  const getCurrentTurn = () => {
-    return frames.length % 2 === 1 ? TurnsEnum.x : TurnsEnum.o;
+  const gameIsOver = () => {
+    return winner !== '';
   }
-
-  const isAlreadyOccupiedAtIndex = (index: number): boolean => {
-    return lastFrame()[index] !== '';
-  }
-
-  const lastFrame = (): string[] => {
-    return frames[frames.length-1];
-  };
 
   return (
     <div className="Grid">
@@ -74,7 +82,7 @@ const Game: React.FC = () => {
             );
           })}
         </div>
-        <p>{winner !== '' ? "winner is: " + winner : ''}</p>
+        <p>{gameIsOver() ? "winner is: " + winner : ''}</p>
         <button onClick={restartGame}>Restart game</button>
       </div>
       <div>
