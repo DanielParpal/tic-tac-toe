@@ -8,7 +8,11 @@ const Game: React.FC = () => {
     o: 'o'
   };
 
-  const [frames, setFrames] = useState([new Array(9).fill('')]);
+  const emptyFrames = () => {
+    return [new Array(9).fill('')];
+  };
+
+  const [frames, setFrames] = useState(emptyFrames());
   const [turn, setTurn] = useState(TurnsEnum.x);
   const [winner, setWinner] = useState('');
 
@@ -32,6 +36,11 @@ const Game: React.FC = () => {
     }
   }
 
+  const restartGame = () => {
+    setFrames(emptyFrames());
+    setTurn(TurnsEnum.x);
+  }
+
   const isAlreadyOccupiedAtIndex = (index: number): boolean => {
     return lastFrame()[index] !== '';
   }
@@ -53,6 +62,7 @@ const Game: React.FC = () => {
         })}
       </div>
       <p>{winner !== '' ? "winner is: " + winner : ''}</p>
+      <button onClick={restartGame}>Restart game</button>
     </div>
   )
 }

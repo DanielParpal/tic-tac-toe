@@ -14,16 +14,3 @@
 .Tile > img {
   width: 100px;
 }
-
-/* .Tile {
-  width: 40px;
-  height: 40px;
-  border: 1px solid black;
-  float: left;
-  padding-left: 30px;
-  padding-top: 25px;
-}
-
-.Tile:nth-child(3n+1) {
-  clear: left;
-} */
