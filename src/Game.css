@@ -1,6 +1,7 @@
 .Grid {
   display: grid;
   grid-template-columns: 350px 150px;
+  margin-left: 50px;
 }
 
 .Board {

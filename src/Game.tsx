@@ -1,8 +1,9 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import './Game.css';
+import TimeTravel from './TimeTravel';
 import {checkForWin} from './modules/engine';
 
-const Game: React.FC = () => {
+export default function Game() {
 
   const TurnsEnum = {
     x: 'x',
@@ -22,7 +23,7 @@ const Game: React.FC = () => {
   }, [frames, TurnsEnum]);
 
   const lastFrame = useCallback((): string[] => {
-    return frames[frames.length-1];
+    return frames[frames.length - 1];
   }, [frames]);
 
   useEffect(() => {
@@ -72,7 +73,7 @@ const Game: React.FC = () => {
   return (
     <div className="Grid">
       <div>
-        <p>Player turn: {turn}</p>
+        <p>{gameIsOver() ? "Winner is: " + winner : "Player turn: " + turn}</p>
         <div className="Board">
           {lastFrame().map((tile, index) => {
             return (
@@ -82,20 +83,10 @@ const Game: React.FC = () => {
             );
           })}
         </div>
-        <p>{gameIsOver() ? "winner is: " + winner : ''}</p>
         <button onClick={restartGame}>Restart game</button>
       </div>
-      <div>
-        <h3>Time travel</h3>
-        {
-          frames.map((_, index) => {
-            const text = index > 0 ? `move ${index}` : "start";
-            return <button onClick={(e) => travelTo(index, e)} key={index}>Go to {text}</button>
-          })
-        }
-      </div>
+      
+      <TimeTravel frames={frames} travelTo={travelTo} />
     </div>
   )
 }
-
-export default Game;
