@@ -1,7 +1,8 @@
 import React from 'react';
+import {FrameType} from 'Game';
 
 export interface Props {
-  frames: String[][],
+  frames: FrameType[][],
   travelTo(index: number, e: React.SyntheticEvent): void
 }
 

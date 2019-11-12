@@ -3,6 +3,11 @@ import './Game.css';
 import TimeTravel from './TimeTravel';
 import {checkForWin} from './modules/engine';
 
+export interface FrameType {
+  playedBy: string,
+  colorScheme: number[][]
+}
+
 export default function Game() {
 
   const TurnsEnum = {
@@ -10,8 +15,19 @@ export default function Game() {
     o: 'o'
   };
 
-  const emptyFrames = () => {
-    return [new Array(9).fill('')];
+  const defaultColors = (): number[][] => {
+    return [
+      [16, 16, 16],
+      [16, 16, 16],
+      [240, 240, 240]
+    ];
+  }
+
+  const emptyFrames = (): FrameType[][] => {
+    return [new Array(9).fill({
+      playedBy: '',
+      colorScheme: defaultColors()
+    })];
   };
 
   const [frames, setFrames] = useState(emptyFrames());
@@ -22,7 +38,7 @@ export default function Game() {
     return frames.length % 2 === 1 ? TurnsEnum.x : TurnsEnum.o;
   }, [frames, TurnsEnum]);
 
-  const lastFrame = useCallback((): string[] => {
+  const lastFrame = useCallback((): FrameType[] => {
     return frames[frames.length - 1];
   }, [frames]);
 
@@ -37,38 +53,64 @@ export default function Game() {
     }
   }, [frames, lastFrame, turn, getCurrentTurn]);
 
-  const toggleTile = (index: number, _e: React.SyntheticEvent) => {
+  const toggleTile = async (index: number, _e: React.SyntheticEvent) => {
     if (moveIsNotLegalAt(index)) return;
 
-    markTileToCurrentPlayer(index);
-  }
+    await markTileToCurrentPlayer(index);
+  };
 
   const moveIsNotLegalAt = (index: number) => {
     return gameIsOver() || tileIsOccupiedAtIndex(index);
-  }
+  };
 
   const tileIsOccupiedAtIndex = (index: number): boolean => {
-    return lastFrame()[index] !== '';
-  }
+    return lastFrame()[index].playedBy !== '';
+  };
 
-  const markTileToCurrentPlayer = (index: number) => {
+  const markTileToCurrentPlayer = async (index: number) => {
     const newFrame = [...lastFrame()];
-    newFrame[index] = turn;
+
+    newFrame[index] = {
+      playedBy: turn,
+      colorScheme: await generateNewColorScheme()
+    };
+
     setFrames(frames.concat([newFrame]));
-  }
+  };
 
   const travelTo = (index: number, _e: React.SyntheticEvent) => {
     const newFrames = frames.slice(0, index + 1);
     setFrames(newFrames);
-  }
+  };
   
   const restartGame = () => {
     setFrames(emptyFrames());
-  }
+  };
 
   const gameIsOver = () => {
     return winner !== '';
-  }
+  };
+
+  const generateNewColorScheme = async () => {
+    const data = {model: 'default'};
+    const request = new Request('http://colormind.io/api/', {method: 'POST', body: JSON.stringify(data)});
+    const response = await fetch(request);
+
+    return (await response.json()).result.slice(0, 3);
+  };
+
+  const rgb = (values: number[]) => {
+    return `rgb(${values[0]}, ${values[1]}, ${values[2]})`;
+  };
+
+  const styleObj = (frame: FrameType) => {
+    return {
+      color: rgb(frame.colorScheme[0]),
+      borderColor: rgb(frame.colorScheme[1]),
+      backgroundColor: rgb(frame.colorScheme[2]),
+      fontSize: '3em'
+    };
+  };
 
   return (
     <div className="Grid">
@@ -77,8 +119,12 @@ export default function Game() {
         <div className="Board">
           {lastFrame().map((tile, index) => {
             return (
-              <div key={index} onClick={(e) => toggleTile(index, e)} className="Tile">
-                {tile}
+              <div 
+                key={index} 
+                onClick={(e) => toggleTile(index, e)} 
+                className="Tile"
+                style={styleObj(tile)}>
+                  {tile.playedBy}
               </div>
             );
           })}
@@ -88,5 +134,5 @@ export default function Game() {
       
       <TimeTravel frames={frames} travelTo={travelTo} />
     </div>
-  )
+  );
 }
