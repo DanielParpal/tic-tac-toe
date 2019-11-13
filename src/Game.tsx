@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import './Game.css';
+import Board from './Board';
 import TimeTravel from './TimeTravel';
 import {checkForWin} from './modules/engine';
 
@@ -99,36 +100,11 @@ export default function Game() {
     return (await response.json()).result.slice(0, 3);
   };
 
-  const rgb = (values: number[]) => {
-    return `rgb(${values[0]}, ${values[1]}, ${values[2]})`;
-  };
-
-  const styleObj = (frame: FrameType) => {
-    return {
-      color: rgb(frame.colorScheme[0]),
-      borderColor: rgb(frame.colorScheme[1]),
-      backgroundColor: rgb(frame.colorScheme[2]),
-      fontSize: '3em'
-    };
-  };
-
   return (
     <div className="Grid">
       <div>
         <p>{gameIsOver() ? "Winner is: " + winner : "Player turn: " + turn}</p>
-        <div className="Board">
-          {lastFrame().map((tile, index) => {
-            return (
-              <div 
-                key={index} 
-                onClick={(e) => toggleTile(index, e)} 
-                className="Tile"
-                style={styleObj(tile)}>
-                  {tile.playedBy}
-              </div>
-            );
-          })}
-        </div>
+        <Board currentFrame={lastFrame()} toggleTile={toggleTile} />
         <button onClick={restartGame}>Restart game</button>
       </div>
       
