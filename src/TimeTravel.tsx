@@ -1,8 +1,8 @@
 import React from 'react';
-import {FrameType} from 'Game';
+import {TileType} from 'Game';
 
 export interface Props {
-  frames: FrameType[][],
+  frames: TileType[][],
   travelTo(index: number, e: React.SyntheticEvent): void
 }
 
