@@ -26,7 +26,7 @@ export default function Board({currentFrame, winningSequence, toggleTile}: Props
   const getClassName = (tile: TileType, index: number) => {
     if (winningSequence === 0) return 'Tile';
 
-    const isAWinningTile = tileIsPartOfWinningSequence(winningSequence, index);
+    const isAWinningTile = tileIsPartOfWinningSequence(index, winningSequence);
     return isAWinningTile ? 'Tile Tile__winning' : 'Tile';
   }
   

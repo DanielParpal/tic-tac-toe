@@ -20,8 +20,8 @@ export const checkForWinningPattern = (sequence: TileType[], player: string): nu
   return containsWinningPattern(binarySequence);
 }
 
-export const tileIsPartOfWinningSequence = (binarySequence: number, index: number) => {
-  return ((binarySequence << index) & WINNING_POSITION_MASK) === WINNING_POSITION_MASK;
+export const tileIsPartOfWinningSequence = (tileIndex: number, winningBinarySequence: number) => {
+  return ((winningBinarySequence << tileIndex) & WINNING_POSITION_MASK) === WINNING_POSITION_MASK;
 }
 
 const parseToBinarySequence = (sequence: TileType[], player: string): number => {

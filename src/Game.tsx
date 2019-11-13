@@ -27,6 +27,11 @@ export default function Game() {
     [240, 240, 240]
   ];
 
+  const noWinner = {
+    player: '',
+    sequence: 0
+  };
+
   // Just for fun of using useMemo()
   const emptyFrames = useMemo(() => {
     return [new Array(9).fill({
@@ -34,13 +39,6 @@ export default function Game() {
       colorScheme: defaultColors
     })];
   }, [defaultColors]);
-
-  const noWinner = useMemo(() => {
-    return {
-      player: '',
-      sequence: 0
-    };
-  }, []);
 
   const [frames, setFrames] = useState(emptyFrames);
   const [turn, setTurn] = useState(TurnsEnum.x);
@@ -54,9 +52,10 @@ export default function Game() {
     return frames[frames.length - 1];
   }, [frames]);
 
+  // Let's chat about why adding getCurrentTurn to the dependancy list breaks everything
   useEffect(() => {
     const winningPattern = checkForWinningPattern(lastFrame(), turn);
-    console.log(frames);
+
     if (winningPattern) {
       setWinner({player: turn, sequence: winningPattern});
     } else {
