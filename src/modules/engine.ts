@@ -9,7 +9,10 @@ const WINNING_BINARY_MASKS: number[] = [
   0b010010010,
   0b001001001,
   0b100010001,
-  0b001010100
+  0b001010100,
+  0b1100,
+  0b1010,
+  0b1001
 ];
 
 const WINNING_POSITION_MASK = 0b100000000;
@@ -32,7 +35,7 @@ const parseToBinarySequence = (sequence: TileType[], player: string): number => 
   return parseInt(cleanSequence, 2);
 }
 
-const containsWinningPattern = (binarySequence: number): number => {
+export const containsWinningPattern = (binarySequence: number): number => {
   for (const mask of WINNING_BINARY_MASKS) {
     if ((binarySequence & mask) === mask) {
       return mask;

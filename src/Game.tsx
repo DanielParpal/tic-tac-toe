@@ -3,6 +3,7 @@ import './Game.css';
 import Board from './Board';
 import TimeTravel from './TimeTravel';
 import {checkForWinningPattern} from './modules/engine';
+import {buildStatesGraph} from './modules/states-graph';
 
 export interface TileType {
   playedBy: string,
@@ -13,13 +14,12 @@ export interface WinnerType {
   player: string,
   sequence: number
 }
+export const TurnsEnum = {
+  x: 'x',
+  o: 'o'
+};
 
 export default function Game() {
-
-  const TurnsEnum = {
-    x: 'x',
-    o: 'o'
-  };
 
   const defaultColors = [
     [16, 16, 16],
@@ -34,7 +34,7 @@ export default function Game() {
 
   // Just for fun of using useMemo()
   const emptyFrames = useMemo(() => {
-    return [new Array(9).fill({
+    return [new Array(4).fill({
       playedBy: '',
       colorScheme: defaultColors
     })];
@@ -122,3 +122,5 @@ export default function Game() {
     </div>
   );
 }
+
+buildStatesGraph();
