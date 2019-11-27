@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useContext, Dispatch } from 'react';
 import {tileIsPartOfWinningSequence} from './modules/engine';
-import {TileType} from 'Game';
+import {TileType, ActionType} from 'Game';
 import './Board.css';
 
 interface Props {
   currentFrame: TileType[],
   moves: number[],
   winningSequence: number,
-  toggleTile(index: number, _e: React.SyntheticEvent): void
+  dispatch: Dispatch<ActionType>
 }
 
-export default function Board({currentFrame, moves, winningSequence, toggleTile}: Props) {
+export default function Board({currentFrame, moves, winningSequence, dispatch}: Props) {
+
   const rgb = (values: number[]) => {
     return `rgb(${values[0]}, ${values[1]}, ${values[2]})`;
   };
@@ -37,7 +38,7 @@ export default function Board({currentFrame, moves, winningSequence, toggleTile}
         return (
           <div 
             key={index} 
-            onClick={(e) => toggleTile(index, e)} 
+            onClick={() => dispatch({type: 'play', payload: {tilePlayed: index}})} 
             className={getClassName(tile, index)}
             style={styleObj(tile)}>
               {/* {tile.playedBy ? tile.playedBy : moves[index]} */}

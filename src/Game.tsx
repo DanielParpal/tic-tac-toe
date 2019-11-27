@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useMemo} from 'react';
+import React, {useState, useEffect, useCallback, useMemo, useReducer} from 'react';
 import './Game.css';
 import Board from './Board';
 import TimeTravel from './TimeTravel';
@@ -14,149 +14,168 @@ export interface WinnerType {
   player: string,
   sequence: number
 }
+
 export const TurnsEnum = {
   x: 'x',
   o: 'o'
 };
 
-export default function Game() {
+export interface ActionType {
+  type: 'reset' | 'travel' | 'play',
+  payload: {
+    resetTo?: number,
+    tilePlayed?: number
+  }
+}
 
-  const defaultColors = [
-    [180, 180, 180],
-    [16, 16, 16],
-    [240, 240, 240]
-  ];
+const defaultColors = [
+  [180, 180, 180],
+  [16, 16, 16],
+  [240, 240, 240]
+];
 
-  const noWinner = {
-    player: '',
-    sequence: 0
+const emptyFrames = [new Array(9).fill({
+    playedBy: '',
+    colorScheme: defaultColors
+  })];
+
+
+function reducer(state: TileType[][], action: ActionType) {
+  switch (action.type) {
+    case 'travel':
+      if (!action.payload.resetTo) return emptyFrames;
+      return state.slice(0, action.payload.resetTo + 1);
+    case 'play':
+        if (!action.payload.tilePlayed) return emptyFrames;
+      return toggleTile(state, action.payload.tilePlayed);
+    default: 
+      return emptyFrames;
+    }
+}
+
+const toggleTile = (frames: TileType[][], index: number) => {
+  if (moveIsNotLegalAt(frames, index)) return frames;
+
+  return markTileToCurrentPlayer(frames, index);
+};
+
+const moveIsNotLegalAt = (frames: TileType[][], index: number) => {
+  return gameIsOver(frames) || tileIsOccupiedAtIndex(frames, index);
+};
+
+const markTileToCurrentPlayer = (frames: TileType[][], index: number) => {
+  const newFrame = [...lastFrame(frames)];
+
+  newFrame[index] = {
+    playedBy: getCurrentTurn(frames),
+    colorScheme: []
   };
 
-  // Just for fun of using useMemo()
-  const emptyFrames = useMemo(() => {
-    return [new Array(9).fill({
-      playedBy: '',
-      colorScheme: defaultColors
-    })];
-  }, [defaultColors]);
+  generateNewColorSchemeFor(newFrame[index].colorScheme);
 
-  const [frames, setFrames] = useState(emptyFrames);
-  const [winner, setWinner] = useState(noWinner);
-  const [moves, setMoves] = useState(new Array(9).fill(-Infinity));
-  const [isAITurn, setIsAITurn] = useState(false);
+  return frames.concat([newFrame]);
+};
 
-  const getCurrentTurn = useCallback(() => {
-    return frames.length % 2 === 1 ? TurnsEnum.x : TurnsEnum.o;
-  }, [frames]);
+const tileIsOccupiedAtIndex = (frames: TileType[][], index: number): boolean => {
+  return lastFrame(frames)[index].playedBy !== '';
+};
 
-  const lastPlayedBy = useCallback(() => {
-    return frames.length % 2 === 1 ? TurnsEnum.o : TurnsEnum.x;
-  }, [frames]);
+const lastFrame = (frames: TileType[][]): TileType[] => {
+  return frames[frames.length - 1];
+};
 
-  const lastFrame = useCallback((): TileType[] => {
-    return frames[frames.length - 1];
-  }, [frames]);
+const gameIsOver = (frames: TileType[][]) => {
+  return hasWinner(frames) || gameIsADraw(frames);
+};
 
-  const encodedState = useCallback(() => {
-    return lastFrame().map((tile) => {
-      return tile.playedBy !== '' ? tile.playedBy : '0';
-    }).join('');
-  }, [lastFrame]);
+const hasWinner = (frames: TileType[][]) => {
+  const w = winner(frames);
+  return w.player !== '';
+}
 
-  // Let's chat about why adding getCurrentTurn to the dependancy list breaks everything
-  useEffect(() => {
-    const winningPattern = checkForWinningPattern(encodedState(), lastPlayedBy());
+const winner = (frames: TileType[][]) => {
+  const winningPattern = checkForWinningPattern(encodedState(frames), lastPlayedBy(frames));
 
-    if (winningPattern) {
-      setWinner({player: lastPlayedBy(), sequence: winningPattern});
-      return;
+  if (winningPattern) {
+    return {player: lastPlayedBy(frames), sequence: winningPattern};
+  } else {
+    return {player: '', sequence: 0};
+  }
+}
+
+const winningSequence = (frames: TileType[][]) => {
+  return winner(frames).sequence;
+}
+
+const gameIsADraw = (frames: TileType[][]) => {
+  const s = encodedState(frames);
+  return !s.includes('0');
+}
+
+const encodedState = (frames: TileType[][]) => {
+  return lastFrame(frames).map((tile) => {
+    return tile.playedBy !== '' ? tile.playedBy : '0';
+  }).join('');
+};
+
+const getCurrentTurn = (frames: TileType[][]) => {
+  return frames.length % 2 === 1 ? TurnsEnum.x : TurnsEnum.o;
+};
+
+const lastPlayedBy = (frames: TileType[][]) => {
+  return frames.length % 2 === 1 ? TurnsEnum.o : TurnsEnum.x;
+};
+
+const generateNewColorSchemeFor = async (tileScheme: number[][]) => {
+  const data = {model: 'default'};
+  const request = new Request('http://colormind.io/api/', {method: 'POST', body: JSON.stringify(data)});
+  const response = await fetch(request);
+
+  tileScheme = (await response.json()).result.slice(0, 3);
+};
+
+const playAI = async (frames: TileType[][], playerMoves: number[]) => {
+  const maxValue = Math.max(...playerMoves);
+
+  for (const i in playerMoves) {
+    const index = parseInt(i);
+    if (playerMoves[index] === maxValue) {
+      await markTileToCurrentPlayer(frames, index);
+      break;
     }
+  }
+}
 
-    if (gameIsADraw()) return;
-    
-    setWinner(noWinner);
-    const currentTurn = getCurrentTurn();
-    const moves: number[] = getWeightedMovesForPlayer(encodedState(), currentTurn);
+
+
+export default function Game() {
+
+  const [frames, dispatch] = useReducer(reducer, emptyFrames);
+  const [moves, setMoves] = useState(new Array(9).fill(-Infinity));
+
+  const FramesReducerContext = React.createContext(dispatch);
+
+  useEffect(() => {
+
+    const currentTurn = getCurrentTurn(frames);
+    const moves: number[] = getWeightedMovesForPlayer(encodedState(frames), currentTurn);
     setMoves(moves);
 
     if (currentTurn === 'o') {
       console.log(moves);
-      playAI(moves);
+      playAI(frames, moves);
     }
 
   }, [frames]);
 
-  const toggleTile = async (index: number, _e: React.SyntheticEvent) => {
-    if (moveIsNotLegalAt(index)) return;
-
-    await markTileToCurrentPlayer(index);
-  };
-
-  const moveIsNotLegalAt = (index: number) => {
-    return gameIsOver() || tileIsOccupiedAtIndex(index);
-  };
-
-  const tileIsOccupiedAtIndex = (index: number): boolean => {
-    return lastFrame()[index].playedBy !== '';
-  };
-
-  const playAI = async (playerMoves: number[]) => {
-    const maxValue = Math.max(...playerMoves);
-
-    for (const i in playerMoves) {
-      const index = parseInt(i);
-      if (playerMoves[index] === maxValue) {
-        await markTileToCurrentPlayer(index);
-        break;
-      }
-    }
-  }
-
-  const markTileToCurrentPlayer = async (index: number) => {
-    const newFrame = [...lastFrame()];
-
-    newFrame[index] = {
-      playedBy: getCurrentTurn(),
-      colorScheme: await generateNewColorScheme()
-    };
-
-    setFrames(frames.concat([newFrame]));
-  };
-
-  const travelTo = (index: number, _e: React.SyntheticEvent) => {
-    const newFrames = frames.slice(0, index + 1);
-    setFrames(newFrames);
-  };
-  
-  const restartGame = () => {
-    setFrames(emptyFrames);
-  };
-
-  const gameIsADraw = () => {
-    const s = encodedState();
-    return !s.includes('0');
-  }
-
-  const gameIsOver = () => {
-    return winner.player !== '';
-  };
-
-  const generateNewColorScheme = async () => {
-    const data = {model: 'default'};
-    const request = new Request('http://colormind.io/api/', {method: 'POST', body: JSON.stringify(data)});
-    const response = await fetch(request);
-
-    return (await response.json()).result.slice(0, 3);
-  };
-
   const gameTitle = () => {
     let content;
-    if (gameIsOver()) {
-      content = "Winner is: " + winner.player;
-    } else if (gameIsADraw()) {
+    if (gameIsOver(frames)) {
+      content = "Winner is: " + winner(frames);
+    } else if (gameIsADraw(frames)) {
       content = "Game is a draw!"
     } else {
-      content = "Player turn: " + getCurrentTurn();
+      content = "Player turn: " + getCurrentTurn(frames);
     }
     return content;
   }
@@ -165,11 +184,11 @@ export default function Game() {
     <div className="Grid">
       <div>
         <h4>{gameTitle()}</h4>
-        <Board currentFrame={lastFrame()} moves={moves} toggleTile={toggleTile} winningSequence={winner.sequence} />
-        <button onClick={restartGame}>Restart game</button>
+        <Board currentFrame={lastFrame(frames)} moves={moves} winningSequence={winningSequence(frames)} dispatch={dispatch} />
+        <button onClick={() => dispatch({type: 'reset', payload: {}})}>Restart game</button>
       </div>
       
-      <TimeTravel frames={frames} travelTo={travelTo} />
+      <TimeTravel frames={frames} dispatch={dispatch} />
     </div>
   );
 }

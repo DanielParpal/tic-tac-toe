@@ -1,12 +1,12 @@
-import React from 'react';
-import {TileType} from 'Game';
+import React, { Dispatch } from 'react';
+import {TileType, ActionType} from 'Game';
 
 export interface Props {
   frames: TileType[][],
-  travelTo(index: number, e: React.SyntheticEvent): void
+  dispatch: Dispatch<ActionType>
 }
 
-export default function TimeTravel({frames, travelTo}: Props) {
+export default function TimeTravel({frames, dispatch}: Props) {
   return (
     <div>
       <h3>Time travel</h3>
@@ -14,7 +14,7 @@ export default function TimeTravel({frames, travelTo}: Props) {
         frames.map((_, index) => {
           const text = index > 0 ? `move ${index}` : "start";
           return (
-            <button onClick={(e) => travelTo(index, e)} key={index}>
+            <button onClick={() => dispatch({type: 'travel', payload: {resetTo: index}})} key={index}>
               Go to {text}
             </button>
           );
