@@ -3,7 +3,7 @@ import './Game.css';
 import Board from './Board';
 import TimeTravel from './TimeTravel';
 import {checkForWinningPattern} from './modules/engine';
-import {buildStatesGraph} from './modules/states-graph';
+import {getWeightedMovesForPlayer} from './modules/minimax';
 
 export interface TileType {
   playedBy: string,
@@ -22,7 +22,7 @@ export const TurnsEnum = {
 export default function Game() {
 
   const defaultColors = [
-    [16, 16, 16],
+    [180, 180, 180],
     [16, 16, 16],
     [240, 240, 240]
   ];
@@ -34,34 +34,56 @@ export default function Game() {
 
   // Just for fun of using useMemo()
   const emptyFrames = useMemo(() => {
-    return [new Array(4).fill({
+    return [new Array(9).fill({
       playedBy: '',
       colorScheme: defaultColors
     })];
   }, [defaultColors]);
 
   const [frames, setFrames] = useState(emptyFrames);
-  const [turn, setTurn] = useState(TurnsEnum.x);
   const [winner, setWinner] = useState(noWinner);
+  const [moves, setMoves] = useState(new Array(9).fill(-Infinity));
+  const [isAITurn, setIsAITurn] = useState(false);
 
   const getCurrentTurn = useCallback(() => {
     return frames.length % 2 === 1 ? TurnsEnum.x : TurnsEnum.o;
-  }, [frames, TurnsEnum]);
+  }, [frames]);
+
+  const lastPlayedBy = useCallback(() => {
+    return frames.length % 2 === 1 ? TurnsEnum.o : TurnsEnum.x;
+  }, [frames]);
 
   const lastFrame = useCallback((): TileType[] => {
     return frames[frames.length - 1];
   }, [frames]);
 
+  const encodedState = useCallback(() => {
+    return lastFrame().map((tile) => {
+      return tile.playedBy !== '' ? tile.playedBy : '0';
+    }).join('');
+  }, [lastFrame]);
+
   // Let's chat about why adding getCurrentTurn to the dependancy list breaks everything
   useEffect(() => {
-    const winningPattern = checkForWinningPattern(lastFrame(), turn);
+    const winningPattern = checkForWinningPattern(encodedState(), lastPlayedBy());
 
     if (winningPattern) {
-      setWinner({player: turn, sequence: winningPattern});
-    } else {
-      setWinner(noWinner);
-      setTurn(getCurrentTurn());
+      setWinner({player: lastPlayedBy(), sequence: winningPattern});
+      return;
     }
+
+    if (gameIsADraw()) return;
+    
+    setWinner(noWinner);
+    const currentTurn = getCurrentTurn();
+    const moves: number[] = getWeightedMovesForPlayer(encodedState(), currentTurn);
+    setMoves(moves);
+
+    if (currentTurn === 'o') {
+      console.log(moves);
+      playAI(moves);
+    }
+
   }, [frames]);
 
   const toggleTile = async (index: number, _e: React.SyntheticEvent) => {
@@ -78,11 +100,23 @@ export default function Game() {
     return lastFrame()[index].playedBy !== '';
   };
 
+  const playAI = async (playerMoves: number[]) => {
+    const maxValue = Math.max(...playerMoves);
+
+    for (const i in playerMoves) {
+      const index = parseInt(i);
+      if (playerMoves[index] === maxValue) {
+        await markTileToCurrentPlayer(index);
+        break;
+      }
+    }
+  }
+
   const markTileToCurrentPlayer = async (index: number) => {
     const newFrame = [...lastFrame()];
 
     newFrame[index] = {
-      playedBy: turn,
+      playedBy: getCurrentTurn(),
       colorScheme: await generateNewColorScheme()
     };
 
@@ -98,6 +132,11 @@ export default function Game() {
     setFrames(emptyFrames);
   };
 
+  const gameIsADraw = () => {
+    const s = encodedState();
+    return !s.includes('0');
+  }
+
   const gameIsOver = () => {
     return winner.player !== '';
   };
@@ -110,11 +149,23 @@ export default function Game() {
     return (await response.json()).result.slice(0, 3);
   };
 
+  const gameTitle = () => {
+    let content;
+    if (gameIsOver()) {
+      content = "Winner is: " + winner.player;
+    } else if (gameIsADraw()) {
+      content = "Game is a draw!"
+    } else {
+      content = "Player turn: " + getCurrentTurn();
+    }
+    return content;
+  }
+
   return (
     <div className="Grid">
       <div>
-        <p>{gameIsOver() ? "Winner is: " + winner.player : "Player turn: " + turn}</p>
-        <Board currentFrame={lastFrame()} toggleTile={toggleTile} winningSequence={winner.sequence} />
+        <h4>{gameTitle()}</h4>
+        <Board currentFrame={lastFrame()} moves={moves} toggleTile={toggleTile} winningSequence={winner.sequence} />
         <button onClick={restartGame}>Restart game</button>
       </div>
       
@@ -122,5 +173,3 @@ export default function Game() {
     </div>
   );
 }
-
-buildStatesGraph();

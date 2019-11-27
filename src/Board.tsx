@@ -5,11 +5,12 @@ import './Board.css';
 
 interface Props {
   currentFrame: TileType[],
+  moves: number[],
   winningSequence: number,
   toggleTile(index: number, _e: React.SyntheticEvent): void
 }
 
-export default function Board({currentFrame, winningSequence, toggleTile}: Props) {
+export default function Board({currentFrame, moves, winningSequence, toggleTile}: Props) {
   const rgb = (values: number[]) => {
     return `rgb(${values[0]}, ${values[1]}, ${values[2]})`;
   };
@@ -19,7 +20,7 @@ export default function Board({currentFrame, winningSequence, toggleTile}: Props
       color: rgb(tile.colorScheme[0]),
       borderColor: rgb(tile.colorScheme[1]),
       backgroundColor: rgb(tile.colorScheme[2]),
-      fontSize: '3em'
+      fontSize: '2.5em'
     };
   };
 
@@ -39,7 +40,8 @@ export default function Board({currentFrame, winningSequence, toggleTile}: Props
             onClick={(e) => toggleTile(index, e)} 
             className={getClassName(tile, index)}
             style={styleObj(tile)}>
-              {tile.playedBy}
+              {/* {tile.playedBy ? tile.playedBy : moves[index]} */}
+              {tile.playedBy ? tile.playedBy : ''}
           </div>
         );
       })}

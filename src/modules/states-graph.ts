@@ -1,15 +1,12 @@
-import {TurnsEnum} from '../Game';
-import {containsWinningPattern} from './engine';
-import { string } from 'prop-types';
-
+// unused at the moment
 // This class actually represents the vertices in our graph
 export class GameState {
   encodedState: string;
-  isWinning: boolean;
+  isWinningFor: string;
 
-  constructor(encodedState: string, isWinning: boolean) {
+  constructor(encodedState: string, isWinningFor: string) {
     this.encodedState = encodedState;
-    this.isWinning = isWinning;
+    this.isWinningFor = isWinningFor;
   }
 }
 
@@ -25,11 +22,28 @@ export class Graph {
     this.adjList.set(v, []);
   }
 
+  addVertices(vertices: GameState[]) {
+    for (const v of vertices) {
+      this.addVertex(v);
+    }
+  }
+
   addEdge(v1: GameState, v2: GameState) {
     const adjVertices = this.adjList.get(v1);
     if (!adjVertices) return;
 
     adjVertices.push(v2);
+  }
+
+  addEdges(edges: [GameState, GameState][]) {
+    for (const [v1, v2] of edges) {
+      this.addEdge(v1, v2);
+    }
+  }
+
+  getLeafNodesForState(s: GameState) {
+    const leaves = [];
+
   }
 
   printItself() {
@@ -43,66 +57,39 @@ export class Graph {
       console.log(display);
     }
   }
-}
 
-export function buildStatesGraph() {
-  const initialState = '0000';
+  bfs(start: GameState, leavesOnly: boolean = false) {
+    const returnNodes: GameState[] = [];
+    const visited = new Map<GameState, boolean>();
+    const queue = [];
 
-  addMoveRecursively(initialState);
-}
+    queue.unshift(start);
+    visited.set(start, true);
+    
+    while (queue.length > 0) {
+      const node = queue.pop();
+      if (!node) break;
 
-export const addMoveRecursively = (state: string) => {
-  
-  const turn = getPlayerTurn(state);
-  const availableTiles = findAvalableTiles(state);
-  if (availableTiles.length === 0) return;
+      const adjNodes = this.adjList.get(node);
+      if (!adjNodes) break;
 
-  for (const tile of availableTiles) {
-    const newState = addMoveToState(state, tile, turn);
+      // Handles the leavesOnly option
+      if (leavesOnly) {
+        if (adjNodes.length === 0) {
+          returnNodes.push(node);
+        }
+      } else {
+        returnNodes.push(node);
+      }
 
-    const binary = toBinary(newState, turn);
-    const isWinning = containsWinningPattern(binary);
-
-    if (!isWinning) {
-      addMoveRecursively(newState);
+      for (const adjNode of adjNodes) {
+        const isVisited = visited.get(adjNode);
+        if (!isVisited) {
+          queue.unshift(adjNode);
+        }
+      }
     }
+    
+    return returnNodes;
   }
-}
-
-const findAvalableTiles = (state: string) => {
-  const tiles: number[] = [];
-
-  state.split('').forEach((letter: string, index: number) => {
-    if (letter === '0') {
-      tiles.push(index);
-    }
-  });
-
-  return tiles;
-}
-
-const addMoveToState = (currentState: string, pos: number, player: string) => {
-  return currentState.slice(0, pos) + player + currentState.slice(pos + 1);
-}
-
-const toBinary = (sequence: string, turn: string) => {
-  const cleanSequence = sequence.split('').map((tile) => tile === turn ? 1 : 0).join('');
-
-  return parseInt(cleanSequence, 2);
-}
-
-const getPlayerTurn = (currentState: string): string => {
-  const qtyX = getFrequencyOf(TurnsEnum.x, currentState);
-  const qtyO = getFrequencyOf(TurnsEnum.o, currentState);
-
-  return (qtyX === qtyO ? TurnsEnum.x : TurnsEnum.o);
-}
-
-const getFrequencyOf = (needle: string, word: string) => {
-  return word
-      .split('')
-      .map((letter) => letter === needle ? 1 : 0)
-      .reduce((total: number, el: number) => {
-        return total + el;
-      }, 0);
 }
