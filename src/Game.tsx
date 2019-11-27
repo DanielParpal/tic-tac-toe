@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useMemo, useReducer} from 'react';
+import React, {useState, useEffect, useReducer} from 'react';
 import './Game.css';
 import Board from './Board';
 import TimeTravel from './TimeTravel';
@@ -41,12 +41,16 @@ const emptyFrames = [new Array(9).fill({
 
 
 function reducer(state: TileType[][], action: ActionType) {
+  console.log(state);
+  console.log(action);
   switch (action.type) {
     case 'travel':
-      if (!action.payload.resetTo) return emptyFrames;
+      if (action.payload.resetTo === undefined) return emptyFrames;
+      console.log('travel');
       return state.slice(0, action.payload.resetTo + 1);
     case 'play':
-        if (!action.payload.tilePlayed) return emptyFrames;
+        if (action.payload.tilePlayed === undefined) return emptyFrames;
+        console.log('play');
       return toggleTile(state, action.payload.tilePlayed);
     default: 
       return emptyFrames;
@@ -56,6 +60,7 @@ function reducer(state: TileType[][], action: ActionType) {
 const toggleTile = (frames: TileType[][], index: number) => {
   if (moveIsNotLegalAt(frames, index)) return frames;
 
+  console.log('will toggle');
   return markTileToCurrentPlayer(frames, index);
 };
 
@@ -68,10 +73,10 @@ const markTileToCurrentPlayer = (frames: TileType[][], index: number) => {
 
   newFrame[index] = {
     playedBy: getCurrentTurn(frames),
-    colorScheme: []
+    colorScheme: defaultColors
   };
 
-  generateNewColorSchemeFor(newFrame[index].colorScheme);
+  // generateNewColorSchemeFor(newFrame[index]);
 
   return frames.concat([newFrame]);
 };
@@ -126,25 +131,15 @@ const lastPlayedBy = (frames: TileType[][]) => {
   return frames.length % 2 === 1 ? TurnsEnum.o : TurnsEnum.x;
 };
 
-const generateNewColorSchemeFor = async (tileScheme: number[][]) => {
+const generateNewColorSchemeFor = async (tile: TileType) => {
   const data = {model: 'default'};
   const request = new Request('http://colormind.io/api/', {method: 'POST', body: JSON.stringify(data)});
   const response = await fetch(request);
 
-  tileScheme = (await response.json()).result.slice(0, 3);
+  tile.colorScheme = (await response.json()).result.slice(0, 3);
+  console.log(tile.colorScheme);
 };
 
-const playAI = async (frames: TileType[][], playerMoves: number[]) => {
-  const maxValue = Math.max(...playerMoves);
-
-  for (const i in playerMoves) {
-    const index = parseInt(i);
-    if (playerMoves[index] === maxValue) {
-      await markTileToCurrentPlayer(frames, index);
-      break;
-    }
-  }
-}
 
 
 
@@ -153,8 +148,6 @@ export default function Game() {
   const [frames, dispatch] = useReducer(reducer, emptyFrames);
   const [moves, setMoves] = useState(new Array(9).fill(-Infinity));
 
-  const FramesReducerContext = React.createContext(dispatch);
-
   useEffect(() => {
 
     const currentTurn = getCurrentTurn(frames);
@@ -162,16 +155,27 @@ export default function Game() {
     setMoves(moves);
 
     if (currentTurn === 'o') {
-      console.log(moves);
       playAI(frames, moves);
     }
 
   }, [frames]);
 
+  const playAI = (frames: TileType[][], playerMoves: number[]) => {
+    const maxValue = Math.max(...playerMoves);
+
+    for (const i in playerMoves) {
+      const index = parseInt(i);
+      if (playerMoves[index] === maxValue) {
+        dispatch({type: 'play', payload: {tilePlayed: index}})
+        break;
+      }
+    }
+  }
+
   const gameTitle = () => {
     let content;
-    if (gameIsOver(frames)) {
-      content = "Winner is: " + winner(frames);
+    if (hasWinner(frames)) {
+      content = "Winner is: " + winner(frames).player;
     } else if (gameIsADraw(frames)) {
       content = "Game is a draw!"
     } else {

@@ -1,4 +1,4 @@
-import React, { useContext, Dispatch } from 'react';
+import React, { Dispatch } from 'react';
 import {tileIsPartOfWinningSequence} from './modules/engine';
 import {TileType, ActionType} from 'Game';
 import './Board.css';
